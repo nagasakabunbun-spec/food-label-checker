@@ -226,6 +226,16 @@ function toggleKeyVisibility() {
   input.type = input.type === 'password' ? 'text' : 'password';
 }
 
+// APIキーの自動保存・読み込み
+(function() {
+  const input = document.getElementById('api-key');
+  const saved = localStorage.getItem('gemini_api_key');
+  if (saved) input.value = saved;
+  input.addEventListener('input', () => {
+    localStorage.setItem('gemini_api_key', input.value);
+  });
+})();
+
 // ─────────────────────────────────────────
 // メインチェック処理
 // ─────────────────────────────────────────
