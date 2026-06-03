@@ -31,7 +31,7 @@
       <h1 class="text-xl font-bold text-gray-900">食品ラベル表示チェッカー</h1>
       <p class="text-xs text-gray-500">食品表示法・食品表示基準（2024年改正対応）｜消費者庁基準準拠</p>
     </div>
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto hidden sm:flex items-center gap-2">
       <span class="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-2 py-1">加工食品対応</span>
       <a href="https://www.caa.go.jp/policies/policy/food_labeling/" target="_blank"
          class="text-xs text-gray-400 hover:text-blue-600 underline">消費者庁</a>
@@ -57,6 +57,7 @@
         </div>
         <p class="text-xs text-amber-700 mt-1">APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。無料枠：1日1,500回まで。
           <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-semibold">無料APIキーを取得する →</a></p>
+        <p class="text-xs text-red-600 mt-1">⚠️ 共有PCでは使用しないでください。APIキーはこのブラウザに保存されます。</p>
       </div>
     </div>
   </div>
@@ -80,7 +81,7 @@
           <div class="text-4xl mb-3">📸</div>
           <p class="text-gray-600 font-medium">ラベル画像をここにドロップ</p>
           <p class="text-gray-400 text-sm mt-1">または クリックしてファイルを選択</p>
-          <p class="text-gray-400 text-xs mt-2">対応形式：JPG / PNG / WEBP / GIF（最大5MB）</p>
+          <p class="text-gray-400 text-xs mt-2">対応形式：JPG / PNG / WEBP / GIF（最大4MB）</p>
         </div>
         <div id="drop-preview" class="hidden">
           <img id="preview-img" class="mx-auto rounded-lg mb-3">
@@ -112,7 +113,7 @@
         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm">
         <span>🔍</span><span>チェック開始</span>
       </button>
-      <p class="text-xs text-gray-400">Claude API を使用してOCR・解析します</p>
+      <p class="text-xs text-gray-400">Google Gemini API を使用してOCR・解析します</p>
     </div>
   </div>
 
@@ -199,7 +200,7 @@ function onDrop(e) {
 }
 function onFileSelect(e) { const file = e.target.files[0]; if (file) loadImage(file); }
 function loadImage(file) {
-  if (file.size > 5 * 1024 * 1024) { alert('ファイルサイズは5MB以下にしてください。'); return; }
+  if (file.size > 4 * 1024 * 1024) { alert('ファイルサイズは4MB以下にしてください。\n（Gemini APIのbase64変換上限のため）'); return; }
   const reader = new FileReader();
   reader.onload = (e) => {
     const result = e.target.result;
@@ -362,18 +363,31 @@ obligation_levelの値：
     });
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts }],
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
-      })
-    }
-  );
+  // 30秒タイムアウト
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let response;
+  try {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts }],
+          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
+        })
+      }
+    );
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('タイムアウト：30秒以内に応答がありませんでした。ネットワークを確認して再試行してください。');
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -384,9 +398,11 @@ obligation_levelの値：
   const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   if (!rawText) throw new Error('APIからレスポンスを取得できませんでした。');
 
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('APIからJSONを取得できませんでした。');
-  return JSON.parse(jsonMatch[0]);
+  // JSON安全抽出：最初の { から最後の } まで
+  const start = rawText.indexOf('{');
+  const end = rawText.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('APIからJSONを取得できませんでした。');
+  return JSON.parse(rawText.slice(start, end + 1));
 }
 
 // ─────────────────────────────────────────
@@ -398,7 +414,8 @@ function renderResults(data) {
   const warning = summary.warning || 0;
   const error = summary.error || 0;
   const notFound = summary.not_found || 0;
-  const score = summary.score || Math.round((ok / Math.max(ok + warning + error, 1)) * 100);
+  const total = ok + warning + error + notFound;
+  const score = summary.score || Math.round((ok / Math.max(total, 1)) * 100);
 
   // スコアバッジ
   const scoreBadge = document.getElementById('score-badge');
@@ -525,6 +542,10 @@ function esc(str) {
 
 function clearResults() {
   document.getElementById('results').classList.add('hidden');
+  // 画像・テキストもリセット
+  clearImage({ stopPropagation: () => {} });
+  document.getElementById('text-input').value = '';
+  document.getElementById('file-input').value = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
