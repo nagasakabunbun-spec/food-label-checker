@@ -48,15 +48,15 @@
     <div class="flex items-start gap-3">
       <span class="text-amber-500 text-lg mt-0.5">🔑</span>
       <div class="flex-1">
-        <label class="block text-sm font-semibold text-amber-900 mb-1">Google Gemini API キー <span class="font-normal text-green-700">（無料で使えます）</span></label>
+        <label class="block text-sm font-semibold text-amber-900 mb-1">OpenRouter API キー <span class="font-normal text-green-700">（無料で使えます）</span></label>
         <div class="flex gap-2">
-          <input id="api-key" type="password" placeholder="AIza... または AQ... (Google AI Studioで取得)" autocomplete="off"
+          <input id="api-key" type="password" placeholder="sk-or-v1-... (OpenRouterで取得)" autocomplete="off"
             class="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
           <button onclick="toggleKeyVisibility()"
             class="px-3 py-2 text-xs bg-amber-100 border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-200">表示</button>
         </div>
-        <p class="text-xs text-amber-700 mt-1">APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。無料枠：1日1,500回まで。
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-semibold">無料APIキーを取得する →</a></p>
+        <p class="text-xs text-amber-700 mt-1">APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。無料枠あり（Gemini 2.0 Flash使用）。
+          <a href="https://openrouter.ai/keys" target="_blank" class="underline font-semibold">無料APIキーを取得する →</a></p>
         <p class="text-xs text-red-600 mt-1">⚠️ 共有PCでは使用しないでください。APIキーはこのブラウザに保存されます。</p>
       </div>
     </div>
@@ -113,7 +113,7 @@
         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm">
         <span>🔍</span><span>チェック開始</span>
       </button>
-      <p class="text-xs text-gray-400">Google Gemini API を使用してOCR・解析します</p>
+      <p class="text-xs text-gray-400">OpenRouter (Gemini 2.0 Flash) を使用してOCR・解析します</p>
     </div>
   </div>
 
@@ -230,10 +230,10 @@ function toggleKeyVisibility() {
 // APIキーの自動保存・読み込み
 (function() {
   const input = document.getElementById('api-key');
-  const saved = localStorage.getItem('gemini_api_key');
+  const saved = localStorage.getItem('openrouter_api_key');
   if (saved) input.value = saved;
   input.addEventListener('input', () => {
-    localStorage.setItem('gemini_api_key', input.value);
+    localStorage.setItem('openrouter_api_key', input.value);
   });
 })();
 
@@ -269,7 +269,7 @@ async function runCheck() {
 }
 
 // ─────────────────────────────────────────
-// Gemini API 呼び出し
+// OpenRouter API 呼び出し
 // ─────────────────────────────────────────
 async function callGeminiAPI(apiKey) {
   const systemPrompt = `あなたは日本の食品表示法・食品表示基準の専門家です。
@@ -344,21 +344,22 @@ obligation_levelの値：
 
 全チェック項目を必ず網羅してください（10項目以上）。`;
 
-  const parts = [];
+  // メッセージ構築（OpenAI互換フォーマット）
+  const userContent = [];
 
   if (currentTab === 'image') {
-    parts.push({
-      inline_data: {
-        mime_type: selectedImageType,
-        data: selectedImageBase64
-      }
+    userContent.push({
+      type: 'image_url',
+      image_url: { url: `data:${selectedImageType};base64,${selectedImageBase64}` }
     });
-    parts.push({
+    userContent.push({
+      type: 'text',
       text: '上記の食品ラベル画像を読み取り、記載内容をすべて認識した上で、食品表示基準に基づいてチェックしてください。JSON形式のみで返答してください。'
     });
   } else {
     const text = document.getElementById('text-input').value.trim();
-    parts.push({
+    userContent.push({
+      type: 'text',
       text: `以下の食品ラベル記載内容を食品表示基準に基づいてチェックしてください。JSON形式のみで返答してください。\n\n${text}`
     });
   }
@@ -369,19 +370,24 @@ obligation_levelの値：
 
   let response;
   try {
-    response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
-        })
-      }
-    );
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://nagasakabunbun-spec.github.io/food-label-checker/',
+        'X-Title': '食品ラベル表示チェッカー'
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-exp:free',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        max_tokens: 4096
+      })
+    });
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('タイムアウト：30秒以内に応答がありませんでした。ネットワークを確認して再試行してください。');
     throw e;
@@ -395,7 +401,7 @@ obligation_levelの値：
   }
 
   const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  const rawText = data.choices?.[0]?.message?.content?.trim();
   if (!rawText) throw new Error('APIからレスポンスを取得できませんでした。');
 
   // JSON安全抽出：最初の { から最後の } まで
