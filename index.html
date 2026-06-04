@@ -113,7 +113,7 @@
         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm">
         <span>🔍</span><span>チェック開始</span>
       </button>
-      <p class="text-xs text-gray-400">OpenRouter (Gemini 2.0 Flash) を使用してOCR・解析します</p>
+      <p class="text-xs text-gray-400">OpenRouter (Google Gemma 4 31B) を使用してOCR・解析します</p>
     </div>
   </div>
 
@@ -380,7 +380,7 @@ obligation_levelの値：
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-maverick:free',
+        model: 'google/gemma-4-31b-it:free',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }
