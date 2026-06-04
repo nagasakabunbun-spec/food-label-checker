@@ -41,28 +41,31 @@
 
 <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
-  <!-- API Key -->
-  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
-    <div class="flex items-start gap-3">
-      <span class="text-amber-500 text-lg mt-0.5">🔑</span>
-      <div class="flex-1">
-        <label class="block text-sm font-semibold text-amber-900 mb-1">
-          Groq API キー <span class="font-normal text-green-700">（完全無料・クレカ不要・1日1,000回）</span>
-        </label>
-        <div class="flex gap-2">
-          <input id="api-key" type="password" placeholder="gsk_... (Groq Consoleで取得)" autocomplete="off"
-            class="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-          <button onclick="toggleKeyVisibility()"
-            class="px-3 py-2 text-xs bg-amber-100 border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-200">表示</button>
-        </div>
-        <p class="text-xs text-amber-700 mt-1">
-          APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。
-          <a href="https://console.groq.com/keys" target="_blank" class="underline font-semibold">無料APIキーを取得する（console.groq.com）→</a>
-        </p>
-        <p class="text-xs text-red-600 mt-1">⚠️ 共有PCでは使用しないでください。APIキーはこのブラウザに保存されます。</p>
+  <!-- API Key（折りたたみ） -->
+  <details id="api-key-section" class="bg-amber-50 border border-amber-200 rounded-xl">
+    <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer select-none list-none">
+      <span class="text-amber-500">🔑</span>
+      <span class="text-sm font-semibold text-amber-900">API設定</span>
+      <span id="api-key-status" class="text-xs text-gray-400 ml-1"></span>
+      <span class="ml-auto text-xs text-amber-600">▾ 展開</span>
+    </summary>
+    <div class="px-4 pb-4 pt-1 border-t border-amber-200">
+      <label class="block text-sm font-semibold text-amber-900 mb-1">
+        Groq API キー <span class="font-normal text-green-700">（完全無料・クレカ不要・1日1,000回）</span>
+      </label>
+      <div class="flex gap-2">
+        <input id="api-key" type="password" placeholder="gsk_... (Groq Consoleで取得)" autocomplete="off"
+          class="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+        <button onclick="toggleKeyVisibility()"
+          class="px-3 py-2 text-xs bg-amber-100 border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-200">表示</button>
       </div>
+      <p class="text-xs text-amber-700 mt-1">
+        APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。
+        <a href="https://console.groq.com/keys" target="_blank" class="underline font-semibold">無料APIキーを取得する（console.groq.com）→</a>
+      </p>
+      <p class="text-xs text-red-600 mt-1">⚠️ 共有PCでは使用しないでください。APIキーはこのブラウザに保存されます。</p>
     </div>
-  </div>
+  </details>
 
   <!-- 入力エリア -->
   <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -176,13 +179,33 @@ let lastCheckResult = null;
 let chatHistory = []; // {role, content} の配列
 
 // ─────────────────────────────────────────
-// APIキー 自動保存
+// APIキー 自動保存・折りたたみ制御
 // ─────────────────────────────────────────
 (function() {
   const input = document.getElementById('api-key');
+  const section = document.getElementById('api-key-section');
+  const status = document.getElementById('api-key-status');
   const saved = localStorage.getItem('groq_api_key');
+
+  function updateStatus(val) {
+    if (val) {
+      status.textContent = '（設定済み）';
+      status.className = 'text-xs text-green-600 ml-1';
+      section.removeAttribute('open'); // キーがあれば折りたたむ
+    } else {
+      status.textContent = '（未設定）';
+      status.className = 'text-xs text-red-500 ml-1';
+      section.setAttribute('open', ''); // キーがなければ開く
+    }
+  }
+
   if (saved) input.value = saved;
-  input.addEventListener('input', () => localStorage.setItem('groq_api_key', input.value));
+  updateStatus(saved);
+
+  input.addEventListener('input', () => {
+    localStorage.setItem('groq_api_key', input.value);
+    updateStatus(input.value);
+  });
 })();
 
 function toggleKeyVisibility() {
