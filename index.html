@@ -137,6 +137,30 @@
       </div>
     </div>
 
+    <!-- Q&Aチャット -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+        <span class="text-lg">💬</span>
+        <div>
+          <h3 class="text-sm font-bold text-gray-900">チェック結果について質問する</h3>
+          <p class="text-xs text-gray-400">「栄養成分表示の書き方を教えて」「この改善案の具体的な文例は？」など、自由に質問できます</p>
+        </div>
+      </div>
+      <!-- チャット履歴 -->
+      <div id="chat-history" class="px-5 py-3 space-y-3 max-h-96 overflow-y-auto"></div>
+      <!-- 入力欄 -->
+      <div class="px-5 pb-5 pt-2 border-t border-gray-100">
+        <div class="flex gap-2">
+          <textarea id="chat-input" rows="2" placeholder="質問を入力してください…"
+            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendQuestion();}"></textarea>
+          <button id="chat-btn" onclick="sendQuestion()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg self-end transition-colors">送信</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Enter で送信、Shift+Enter で改行</p>
+      </div>
+    </div>
+
     <button onclick="clearResults()"
       class="text-sm text-gray-400 hover:text-gray-600 underline">← 最初からやり直す</button>
   </div>
@@ -144,6 +168,13 @@
 </main>
 
 <script>
+// ─────────────────────────────────────────
+// 状態管理
+// ─────────────────────────────────────────
+let lastLabelText = '';
+let lastCheckResult = null;
+let chatHistory = []; // {role, content} の配列
+
 // ─────────────────────────────────────────
 // APIキー 自動保存
 // ─────────────────────────────────────────
@@ -174,6 +205,10 @@ async function runCheck() {
 
   try {
     const result = await callGroqAPI(apiKey, text);
+    lastLabelText = text;
+    lastCheckResult = result;
+    chatHistory = [];
+    document.getElementById('chat-history').innerHTML = '';
     renderResults(result);
   } catch (err) {
     alert('エラーが発生しました：' + err.message);
@@ -435,7 +470,127 @@ function esc(str) {
 function clearResults() {
   document.getElementById('results').classList.add('hidden');
   document.getElementById('text-input').value = '';
+  document.getElementById('chat-history').innerHTML = '';
+  chatHistory = [];
+  lastLabelText = '';
+  lastCheckResult = null;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────
+// Q&A チャット
+// ─────────────────────────────────────────
+async function sendQuestion() {
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { alert('APIキーを入力してください。'); return; }
+
+  // ユーザーメッセージ表示
+  appendChat('user', question);
+  input.value = '';
+  document.getElementById('chat-btn').disabled = true;
+
+  // 思考中表示
+  const thinkingId = 'thinking-' + Date.now();
+  appendChat('thinking', '回答を作成中...', thinkingId);
+
+  // 会話履歴に追加
+  chatHistory.push({ role: 'user', content: question });
+
+  try {
+    const answer = await callGroqChat(apiKey, question);
+    chatHistory.push({ role: 'assistant', content: answer });
+    document.getElementById(thinkingId)?.remove();
+    appendChat('assistant', answer);
+    document.getElementById('chat-history').lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+  } catch (err) {
+    document.getElementById(thinkingId)?.remove();
+    appendChat('error', 'エラー：' + err.message);
+  } finally {
+    document.getElementById('chat-btn').disabled = false;
+  }
+}
+
+function appendChat(role, content, id) {
+  const div = document.createElement('div');
+  if (id) div.id = id;
+
+  if (role === 'user') {
+    div.className = 'flex justify-end';
+    div.innerHTML = `<div class="bg-blue-600 text-white text-sm rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%]">${esc(content)}</div>`;
+  } else if (role === 'assistant') {
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="bg-gray-100 text-gray-800 text-sm rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%] space-y-1">${esc(content)}</div>`;
+  } else if (role === 'thinking') {
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="bg-gray-100 text-gray-400 text-sm rounded-2xl rounded-tl-sm px-4 py-2 italic flex items-center gap-2">
+      <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> ${esc(content)}</div>`;
+  } else {
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 max-w-[85%]">${esc(content)}</div>`;
+  }
+
+  document.getElementById('chat-history').appendChild(div);
+}
+
+async function callGroqChat(apiKey, question) {
+  // システムコンテキスト：チェック結果を含める
+  const contextSummary = lastCheckResult
+    ? `チェック済み商品：${lastCheckResult.product_name || '不明'}（${lastCheckResult.product_type || '加工食品'}）
+チェック結果：OK ${lastCheckResult.summary?.ok || 0}件、要確認 ${lastCheckResult.summary?.warning || 0}件、違反・欠落 ${lastCheckResult.summary?.error || 0}件
+ラベル記載内容：${lastLabelText}`
+    : '';
+
+  const messages = [
+    {
+      role: 'system',
+      content: `あなたは日本の食品表示法・食品表示基準の専門家です。
+食品ラベルのチェック結果について、ユーザーからの質問に日本語で丁寧に答えてください。
+はちみつ・養蜂製品に関する専門知識も持っています。
+回答は具体的・実践的で、改善案には実際に使える文例も含めてください。
+
+【チェック対象の商品情報】
+${contextSummary}`
+    },
+    ...chatHistory.slice(-10) // 直近10往復を文脈として送る
+  ];
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let response;
+  try {
+    response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages,
+        temperature: 0.3,
+        max_tokens: 1024
+      })
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('タイムアウト：再試行してください。');
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `APIエラー: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || '回答を取得できませんでした。';
 }
 </script>
 </body>
