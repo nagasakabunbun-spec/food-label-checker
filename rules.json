@@ -1,0 +1,66 @@
+{
+  "version": "2026-06-04",
+  "last_checked": "2026-06-04",
+  "has_updates": false,
+  "updates_detected": [],
+  "sources": {
+    "caa_main": {
+      "name": "消費者庁｜食品表示法等（法令・通知）",
+      "url": "https://www.caa.go.jp/policies/policy/food_labeling/food_labeling_act/",
+      "hash": "",
+      "content": "食品表示法に基づく食品表示基準（内閣府令第10号）により、容器包装に入れられた加工食品には以下の表示が義務付けられています。名称、原材料名、添加物、内容量、消費期限または賞味期限、保存方法、製造者または販売者（名称・住所）、栄養成分表示（熱量・たんぱく質・脂質・炭水化物・食塩相当量）、アレルゲン表示。2024年改正により原料原産地表示の対象が拡大されました。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    },
+    "caa_standard": {
+      "name": "消費者庁｜食品表示基準について",
+      "url": "https://www.caa.go.jp/policies/policy/food_labeling/food_labeling_act/food_labeling_act_index/",
+      "hash": "",
+      "content": "食品表示基準（2024年最新版）では、一般用加工食品の横断的義務表示として、名称、原材料名、添加物、原料原産地名、内容量、固形量及び内容総量、消費期限または賞味期限、保存方法、原産国名（輸入品のみ）、製造者等が必須です。個別的義務表示として、マカロニ類の調理方法など品目ごとに追加要件があります。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    },
+    "caa_allergy": {
+      "name": "消費者庁｜アレルゲン表示",
+      "url": "https://www.caa.go.jp/policies/policy/food_labeling/food_labeling_act/food_labeling_act_index/allergy/",
+      "hash": "",
+      "content": "特定原材料8品目（えび・かに・くるみ・小麦・そば・卵・乳・落花生）は表示義務。2023年3月にくるみが義務化品目に追加（経過措置期間2025年3月末まで）。特定原材料に準ずるもの20品目（アーモンド・あわび・いか・いくら・オレンジ・カシューナッツ・キウイフルーツ・牛肉・ごま・さけ・さば・大豆・鶏肉・バナナ・豚肉・まつたけ・もも・やまいも・りんご・ゼラチン）は表示推奨。一括表示法または個別表示法のいずれかで表示。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    },
+    "caa_nutrition": {
+      "name": "消費者庁｜栄養成分表示",
+      "url": "https://www.caa.go.jp/policies/policy/food_labeling/health_promotion/",
+      "hash": "",
+      "content": "容器包装された全ての一般用加工食品および一般用添加物に栄養成分表示が義務。表示必須5項目：熱量（kcal）、たんぱく質（g）、脂質（g）、炭水化物（g）、食塩相当量（g）。表示順序は上記順を厳守。ナトリウムは食塩相当量に換算（ナトリウム量mg×2.54÷1000）。任意表示：飽和脂肪酸、食物繊維、糖質など。小規模事業者（食品販売金額1億円未満かつ従業員20人以下）は当面の間表示が免除（努力義務）。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    },
+    "foodlabeling_rule": {
+      "name": "食品表示サポート.COM｜加工食品の表示ルール",
+      "url": "https://food-labeling.com/rule.html",
+      "hash": "",
+      "content": "加工食品の横断的義務表示：名称、原材料名、添加物、原料原産地名（国内製造食品は重量割合1位の原材料の産地表示）、内容量、消費期限または賞味期限、保存方法、製造者または販売者（名称・住所）。添加物は原材料名と「／」または改行で区分。アレルゲンは一括表示または個別表示のいずれか統一して使用。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    },
+    "foodlabeling_allergy": {
+      "name": "食品表示サポート.COM｜アレルゲン表示",
+      "url": "https://food-labeling.com/allergy.html",
+      "hash": "",
+      "content": "特定原材料8品目の表示義務：えび・かに・くるみ・小麦・そば・卵・乳・落花生（ピーナッツ）。コンタミネーション（意図せぬ混入）については任意表示だが推奨。「本品製造工場では〇〇を含む製品を生産しています」等の注意喚起表示が適切。乳の表記：乳成分、乳固形分なども含む。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    }
+  },
+  "honey_sources": {
+    "mhlw_honey": {
+      "name": "厚生労働省｜乳児ボツリヌス症の予防について",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000121431.html",
+      "hash": "",
+      "content": "はちみつには乳児ボツリヌス症を引き起こすボツリヌス菌が含まれることがあります。1歳未満の乳児にははちみつを与えないでください。この警告ははちみつそのものだけでなく、はちみつを使用した食品にも適用されます。消費者庁・厚生労働省は食品事業者に対し「1歳未満の乳児には与えないでください」の表示を強く推奨しています。はちみつを原材料として使用した加工食品についても、一般消費者向け製品には同様の注意表示が推奨されます。",
+      "last_fetched": "2026-06-04",
+      "changed": false
+    }
+  }
+}

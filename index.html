@@ -28,6 +28,7 @@
     <div>
       <h1 class="text-xl font-bold text-gray-900">食品ラベル表示チェッカー</h1>
       <p class="text-xs text-gray-500">食品表示法・食品表示基準（2024年改正対応）｜消費者庁基準準拠｜はちみつ表示対応</p>
+      <p class="text-xs mt-0.5" id="rules-status"><span class="text-gray-400">ガイドライン読込中…</span></p>
     </div>
     <div class="ml-auto hidden sm:flex items-center gap-2">
       <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-2 py-1">🍯 はちみつ対応</span>
@@ -183,7 +184,41 @@
 // ─────────────────────────────────────────
 let lastLabelText = '';
 let lastCheckResult = null;
-let chatHistory = []; // {role, content} の配列
+let chatHistory = [];
+let rulesData = null;
+
+// ─────────────────────────────────────────
+// 起動時：最新ガイドライン読み込み
+// ─────────────────────────────────────────
+const RULES_URL = 'https://nagasakabunbun-spec.github.io/food-label-checker/rules.json';
+
+async function loadRules() {
+  const el = document.getElementById('rules-status');
+  try {
+    const res = await fetch(RULES_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error();
+    rulesData = await res.json();
+    const date = rulesData.last_checked || '不明';
+    el.innerHTML = rulesData.has_updates
+      ? `<span class="text-orange-600 font-semibold">🔔 ガイドライン更新あり（${date}確認）</span>`
+      : `<span class="text-green-600">✅ 最新ガイドライン読込済（${date}確認）</span>`;
+  } catch {
+    el.innerHTML = '<span class="text-gray-400">⚠️ ガイドライン未取得（内蔵ルールで動作）</span>';
+  }
+}
+window.addEventListener('DOMContentLoaded', loadRules);
+
+function buildRulesContext() {
+  if (!rulesData) return '';
+  const parts = [];
+  for (const src of Object.values(rulesData.sources || {})) {
+    if (src.content) parts.push(`【${src.name}】\n${src.content}`);
+  }
+  for (const src of Object.values(rulesData.honey_sources || {})) {
+    if (src.content) parts.push(`【${src.name}（はちみつ関連）】\n${src.content}`);
+  }
+  return parts.length ? '\n\n【消費者庁サイトより取得した最新ガイドライン情報】\n' + parts.join('\n\n') : '';
+}
 
 // ─────────────────────────────────────────
 // APIキー 自動保存・折りたたみ制御
@@ -330,6 +365,10 @@ obligation_levelの値：
 
 全チェック項目を網羅してください（最低10項目）。はちみつが使われている場合はかならずはちみつ専用チェック項目を追加してください。`;
 
+  // 最新ガイドラインを追加
+  const rulesContext = buildRulesContext();
+  const fullSystemPrompt = systemPrompt + rulesContext;
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -345,8 +384,8 @@ obligation_levelの値：
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `以下の食品ラベル記載内容を食品表示基準に基づいてチェックしてください。はちみつまたははちみつを含む原材料が使われている場合は、はちみつ特有のチェックも必ず行ってください。JSON形式のみで返答してください。\n\n【ラベル記載内容】\n${labelText}` }
+          { role: 'system', content: fullSystemPrompt },
+          { role: 'user', content: `以下の食品ラベル記載内容を食品表示基準に基づいてチェックしてください。はちみつまたははちみつを含む原材料が使われている場合は、はちみつ特有のチェックも必ず行ってください。各項目はできるだけ詳細に、改善案は実際に使える文例を含めてください。JSON形式のみで返答してください。\n\n【ラベル記載内容】\n${labelText}` }
         ],
         temperature: 0.1,
         max_tokens: 4096,
