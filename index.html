@@ -30,6 +30,7 @@
       <h1 class="text-xl font-bold text-gray-900">食品ラベル表示チェッカー</h1>
       <p class="text-xs text-gray-500">食品表示法・食品表示基準（2024年改正対応）｜消費者庁基準準拠｜はちみつ表示対応</p>
       <p class="text-xs mt-0.5" id="rules-status"><span class="text-gray-400">ガイドライン読込中…</span></p>
+      <p class="text-xs mt-0.5" id="validation-status"><span class="text-gray-400">ルール検証状態読込中…</span></p>
     </div>
     <div class="ml-auto hidden sm:flex items-center gap-2">
       <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-2 py-1">🍯 はちみつ対応</span>
@@ -228,6 +229,7 @@ let rulesData = null;
 // 起動時：最新ガイドライン読み込み
 // ─────────────────────────────────────────
 const RULES_URL = 'https://nagasakabunbun-spec.github.io/food-label-checker/rules.json';
+const VALIDATION_URL = 'https://nagasakabunbun-spec.github.io/food-label-checker/validation-report.json';
 
 async function loadRules() {
   const el = document.getElementById('rules-status');

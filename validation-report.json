@@ -1,0 +1,13 @@
+{
+  "validated_at": "2026-06-04",
+  "is_valid": true,
+  "total_issues": 0,
+  "critical_count": 0,
+  "warning_count": 0,
+  "suggestion_count": 0,
+  "critical_issues": [],
+  "warnings": [],
+  "suggestions": [],
+  "overall_assessment": "初回検証前の初期状態です。毎週月曜日にGitHub Actionsが自動検証を実施します。",
+  "error": ""
+}
