@@ -331,6 +331,22 @@ async function callGroqAPI(apiKey, labelText) {
 【栄養成分表示の免除条件】
 - 小規模事業者（前年度の食品の販売金額が1億円未満かつ従業員20人以下）は当面免除（努力義務）
 
+【フィードバックの詳細度について】
+各チェック項目のissueとsuggestionは必ず以下の水準で記載してください：
+
+■ issue（問題点）の書き方：
+- 何が足りないか、何が間違っているかを具体的に列挙する
+- 例：「栄養成分表示に『脂質』が記載されていません。また表示順が誤っており、現在は『熱量→炭水化物→たんぱく質』となっていますが、正しくは『熱量→たんぱく質→脂質→炭水化物→食塩相当量』の順でなければなりません」
+
+■ suggestion（改善案）の書き方：
+- 実際にラベルに記載できる文例をそのまま提示する
+- 修正前と修正後を対比する
+- 例：「【修正前】栄養成分表示（100gあたり）：熱量 250kcal、炭水化物 30g、たんぱく質 5g　【修正後】栄養成分表示（100gあたり）：熱量 250kcal、たんぱく質 5g、脂質 12g、炭水化物 30g、食塩相当量 0.5g」
+
+■ current（現在の記載）：
+- ラベルから該当箇所をそのまま抜き出して記載する
+- 記載がない場合は「記載なし」と明記する
+
 以下のJSON形式のみで返答してください。前置き・説明は一切不要です：
 {
   "product_name": "商品名または種類別名称",
@@ -342,9 +358,9 @@ async function callGroqAPI(apiKey, labelText) {
       "label": "チェック項目名",
       "obligation_level": "必須義務",
       "status": "ok",
-      "current": "現在の記載内容（なければ空文字）",
-      "issue": "問題の説明（okの場合は空文字）",
-      "suggestion": "具体的な改善案（okの場合は空文字）",
+      "current": "ラベルから抜き出した現在の記載内容（記載なしの場合は「記載なし」）",
+      "issue": "何がどう問題なのかを具体的に（okの場合は空文字）",
+      "suggestion": "【修正前】…\n【修正後】…\nの形式で実際に使える文例を提示（okの場合は空文字）",
       "legal_basis": "食品表示基準 第X条 等",
       "reference_url": "https://www.caa.go.jp/policies/policy/food_labeling/"
     }
@@ -518,7 +534,11 @@ function renderItem(item) {
         ${item.issue ? `<div><span class="text-xs font-semibold text-gray-600">⚠️ 問題点：</span>
           <p class="text-sm text-gray-800 mt-1">${esc(item.issue)}</p></div>` : ''}
         ${item.suggestion ? `<div><span class="text-xs font-semibold text-gray-600">💡 改善案：</span>
-          <p class="text-sm text-gray-800 mt-1 bg-white/70 rounded px-3 py-2 border-l-4 border-blue-400">${esc(item.suggestion)}</p></div>` : ''}
+          <div class="text-sm text-gray-800 mt-1 bg-white/70 rounded px-3 py-3 border-l-4 border-blue-400 space-y-1">${
+            esc(item.suggestion)
+              .replace(/【修正前】/g, '<span class="inline-block bg-red-100 text-red-700 text-xs font-bold px-1.5 py-0.5 rounded mr-1">修正前</span>')
+              .replace(/【修正後】/g, '<span class="inline-block bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded mr-1 mt-2">修正後</span>')
+          }</div></div>` : ''}
         ${item.legal_basis ? `<div class="flex items-center gap-2 pt-1">
           <span class="text-xs text-gray-400">📖 根拠：${esc(item.legal_basis)}</span>
           ${item.reference_url
