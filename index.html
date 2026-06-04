@@ -699,6 +699,14 @@ async function callGroqLabelGen(apiKey) {
 
   const prompt = `以下の食品ラベルのテキストと、チェックで検出された問題点・改善案をもとに、法的要件を満たす修正済みラベルのデータをJSONで出力してください。
 
+【重要なルール】
+- 元のラベルテキストに記載されている情報のみを使用してください。
+- 元テキストに記載がない項目・不明な項目は、絶対に推測や補完をせず、必ず「……（要記載）」と記載してください。
+- 例：住所が不明なら「株式会社〇〇　……（住所要記載）」
+- 例：栄養成分の数値が不明なら「……（要測定・記載）」
+- 例：賞味期限の具体的な日付が不明なら「……（枠外に記載 or 要記載）」
+- 架空の情報・推測値を一切入れないでください。
+
 【元のラベルテキスト】
 ${lastLabelText}
 
@@ -709,27 +717,27 @@ ${issuesSummary || '問題なし'}
 {
   "product_name": "商品名",
   "category": "種類別名称",
-  "ingredients": "原材料名（添加物は／で区切り）",
-  "content": "内容量",
+  "ingredients": "原材料名（添加物は／で区切り。不明部分は……）",
+  "content": "内容量（不明なら……（要記載））",
   "expiry_label": "賞味期限 or 消費期限",
-  "expiry_value": "期限の記載内容",
-  "storage": "保存方法",
+  "expiry_value": "期限の記載内容（不明なら……（要記載））",
+  "storage": "保存方法（不明なら……（要記載））",
   "seller_label": "販売者 or 製造者",
-  "seller": "会社名・住所",
-  "manufacturer": "製造所（販売者と異なる場合のみ。同一の場合は空文字）",
+  "seller": "会社名　住所（住所不明なら 会社名　……（住所要記載））",
+  "manufacturer": "製造所　住所（販売者と異なる場合のみ。同一なら空文字。住所不明なら……（住所要記載））",
   "nutrition": {
     "serving": "1食分(Xg)あたり or 100gあたり",
-    "energy": "Xkcal",
-    "protein": "Xg",
-    "fat": "Xg",
-    "carb": "Xg",
-    "salt": "Xg"
+    "energy": "数値不明なら……（要記載）kcal",
+    "protein": "数値不明なら……（要記載）g",
+    "fat": "数値不明なら……（要記載）g",
+    "carb": "数値不明なら……（要記載）g",
+    "salt": "数値不明なら……（要記載）g"
   },
-  "allergens": "アレルギー物質の表記（例：小麦・卵・乳成分・大豆を含む）",
-  "contamination": "コンタミネーション注意書き（あれば）",
-  "honey_warning": "はちみつ警告文（はちみつ使用の場合）",
-  "notes": "その他注意書き",
-  "fix_summary": "修正した主な箇所の説明（2〜4行）"
+  "allergens": "アレルギー物質の表記（不明なら……（要確認・記載））",
+  "contamination": "コンタミネーション注意書き（あれば。なければ空文字）",
+  "honey_warning": "はちみつ警告文（はちみつ使用の場合のみ。なければ空文字）",
+  "notes": "その他注意書き（なければ空文字）",
+  "fix_summary": "修正・補完した主な箇所の説明（……の箇所は実際の数値・情報を記入する必要がある旨も含めて2〜4行）"
 }`;
 
   const controller = new AbortController();
@@ -756,6 +764,12 @@ ${issuesSummary || '問題なし'}
   return JSON.parse(raw.slice(s, en + 1));
 }
 
+// 未記載箇所をオレンジ色でハイライト
+function highlightMissing(str) {
+  if (!str) return '<span style="color:#b45309;font-weight:bold;">……（要記載）</span>';
+  return esc(str).replace(/……[^<]*/g, m => `<span style="color:#b45309;font-weight:bold;">${m}</span>`);
+}
+
 function renderLabelCard(d) {
   const n = d.nutrition || {};
   const rows = [
@@ -775,27 +789,30 @@ function renderLabelCard(d) {
 
   document.getElementById('label-card').innerHTML = `
     <div style="border:2px solid #222;padding:12px;font-size:11px;line-height:1.7;color:#111;background:#fff;max-width:480px;margin:0 auto;">
+      <p style="font-size:9px;color:#b45309;margin-bottom:6px;padding:3px 6px;background:#fff7ed;border:1px solid #fed7aa;border-radius:4px;">
+        ⚠️ <b>……（要記載）</b> と表示されている箇所は、実際のラベルには必ず正確な情報を記載してください。
+      </p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
         ${rows.map(([k,v])=>`
           <tr style="border-bottom:1px solid #ccc;">
             <td style="padding:3px 6px;font-weight:bold;white-space:nowrap;vertical-align:top;width:100px;border-right:1px solid #ccc;">${k}</td>
-            <td style="padding:3px 6px;vertical-align:top;">${esc(v||'')}</td>
+            <td style="padding:3px 6px;vertical-align:top;">${highlightMissing(v)}</td>
           </tr>`).join('')}
       </table>
 
       <table style="width:100%;border-collapse:collapse;border:1px solid #555;margin-top:6px;font-size:10px;">
-        <tr><th colspan="2" style="background:#333;color:#fff;padding:3px 6px;text-align:left;">栄養成分表示（${esc(n.serving||'100gあたり')}）</th></tr>
+        <tr><th colspan="2" style="background:#333;color:#fff;padding:3px 6px;text-align:left;">栄養成分表示（${highlightMissing(n.serving||'100gあたり')}）</th></tr>
         ${nutRows.map(([k,v])=>`
           <tr style="border-bottom:1px solid #ccc;">
             <td style="padding:2px 6px;font-weight:bold;">${k}</td>
-            <td style="padding:2px 6px;text-align:right;">${esc(v||'-')}</td>
+            <td style="padding:2px 6px;text-align:right;">${highlightMissing(v)}</td>
           </tr>`).join('')}
       </table>
 
-      ${d.allergens ? `<p style="margin-top:6px;font-size:10px;"><b>アレルギー物質：</b>${esc(d.allergens)}</p>` : ''}
-      ${d.contamination ? `<p style="font-size:10px;color:#555;">${esc(d.contamination)}</p>` : ''}
-      ${d.honey_warning ? `<p style="margin-top:4px;font-size:10px;color:#b45309;font-weight:bold;">⚠️ ${esc(d.honey_warning)}</p>` : ''}
-      ${d.notes ? `<p style="margin-top:4px;font-size:10px;color:#555;">${esc(d.notes)}</p>` : ''}
+      ${d.allergens ? `<p style="margin-top:6px;font-size:10px;"><b>アレルギー物質：</b>${highlightMissing(d.allergens)}</p>` : ''}
+      ${d.contamination ? `<p style="font-size:10px;color:#555;">${highlightMissing(d.contamination)}</p>` : ''}
+      ${d.honey_warning ? `<p style="margin-top:4px;font-size:10px;color:#b45309;font-weight:bold;">⚠️ ${highlightMissing(d.honey_warning)}</p>` : ''}
+      ${d.notes ? `<p style="margin-top:4px;font-size:10px;color:#555;">${highlightMissing(d.notes)}</p>` : ''}
     </div>
     ${d.fix_summary ? `<div class="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-xs text-emerald-800">
       <span class="font-bold">✅ 修正した主な箇所：</span><br>${esc(d.fix_summary)}</div>` : ''}
