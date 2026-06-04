@@ -8,7 +8,6 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
   body { font-family: 'Noto Sans JP', sans-serif; }
-  .drop-active { border-color: #2563eb !important; background-color: #eff6ff !important; }
   .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 700; }
   .fade-in { animation: fadeIn 0.4s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -18,7 +17,6 @@
   .result-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); }
   details > summary { list-style: none; cursor: pointer; }
   details > summary::-webkit-details-marker { display: none; }
-  #preview-img { max-height: 220px; object-fit: contain; }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -29,10 +27,10 @@
     <span class="text-2xl">🏷️</span>
     <div>
       <h1 class="text-xl font-bold text-gray-900">食品ラベル表示チェッカー</h1>
-      <p class="text-xs text-gray-500">食品表示法・食品表示基準（2024年改正対応）｜消費者庁基準準拠</p>
+      <p class="text-xs text-gray-500">食品表示法・食品表示基準（2024年改正対応）｜消費者庁基準準拠｜はちみつ表示対応</p>
     </div>
     <div class="ml-auto hidden sm:flex items-center gap-2">
-      <span class="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-2 py-1">加工食品対応</span>
+      <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-2 py-1">🍯 はちみつ対応</span>
       <a href="https://www.caa.go.jp/policies/policy/food_labeling/" target="_blank"
          class="text-xs text-gray-400 hover:text-blue-600 underline">消費者庁</a>
       <a href="https://food-labeling.com/" target="_blank"
@@ -48,15 +46,19 @@
     <div class="flex items-start gap-3">
       <span class="text-amber-500 text-lg mt-0.5">🔑</span>
       <div class="flex-1">
-        <label class="block text-sm font-semibold text-amber-900 mb-1">Google Gemini API キー <span class="font-normal text-green-700">（無料で使えます・個人Gmailアカウント推奨）</span></label>
+        <label class="block text-sm font-semibold text-amber-900 mb-1">
+          Groq API キー <span class="font-normal text-green-700">（完全無料・クレカ不要・1日1,000回）</span>
+        </label>
         <div class="flex gap-2">
-          <input id="api-key" type="password" placeholder="AIza... (Google AI Studioで取得)" autocomplete="off"
+          <input id="api-key" type="password" placeholder="gsk_... (Groq Consoleで取得)" autocomplete="off"
             class="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
           <button onclick="toggleKeyVisibility()"
             class="px-3 py-2 text-xs bg-amber-100 border border-amber-300 rounded-lg text-amber-700 hover:bg-amber-200">表示</button>
         </div>
-        <p class="text-xs text-amber-700 mt-1">APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。無料枠：1日1,500回まで。
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-semibold">無料APIキーを取得する（個人Gmailでログイン）→</a></p>
+        <p class="text-xs text-amber-700 mt-1">
+          APIキーはブラウザ内のみで使用され、外部サーバーには送信されません。
+          <a href="https://console.groq.com/keys" target="_blank" class="underline font-semibold">無料APIキーを取得する（console.groq.com）→</a>
+        </p>
         <p class="text-xs text-red-600 mt-1">⚠️ 共有PCでは使用しないでください。APIキーはこのブラウザに保存されます。</p>
       </div>
     </div>
@@ -64,56 +66,29 @@
 
   <!-- 入力エリア -->
   <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-    <div class="flex border-b border-gray-200">
-      <button id="tab-image" onclick="switchTab('image')"
-        class="px-6 py-3 text-sm tab-active">📷 画像アップロード</button>
-      <button id="tab-text" onclick="switchTab('text')"
-        class="px-6 py-3 text-sm text-gray-500 hover:text-gray-700">✏️ テキスト入力</button>
-    </div>
-
-    <!-- 画像タブ -->
-    <div id="panel-image" class="p-6">
-      <div id="drop-zone"
-        class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-        onclick="document.getElementById('file-input').click()"
-        ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <div id="drop-default">
-          <div class="text-4xl mb-3">📸</div>
-          <p class="text-gray-600 font-medium">ラベル画像をここにドロップ</p>
-          <p class="text-gray-400 text-sm mt-1">または クリックしてファイルを選択</p>
-          <p class="text-gray-400 text-xs mt-2">対応形式：JPG / PNG / WEBP / GIF（最大4MB）</p>
-        </div>
-        <div id="drop-preview" class="hidden">
-          <img id="preview-img" class="mx-auto rounded-lg mb-3">
-          <p id="preview-name" class="text-sm text-gray-600"></p>
-          <button onclick="clearImage(event)" class="mt-2 text-xs text-red-500 hover:underline">✕ 削除</button>
-        </div>
-      </div>
-      <input id="file-input" type="file" accept="image/*" class="hidden" onchange="onFileSelect(event)">
-    </div>
-
-    <!-- テキストタブ -->
-    <div id="panel-text" class="p-6 hidden">
-      <label class="block text-sm font-medium text-gray-700 mb-2">ラベル記載内容をテキストで入力</label>
-      <textarea id="text-input" rows="10"
+    <div class="px-6 pt-5 pb-2">
+      <label class="block text-sm font-semibold text-gray-700 mb-1">ラベル記載内容をテキストで入力・貼り付け</label>
+      <p class="text-xs text-gray-400 mb-3">商品ラベルの裏面に記載されているテキストをそのままコピー＆ペーストしてください。はちみつ・はちみつ入り製品に特有のチェックも行います。</p>
+      <textarea id="text-input" rows="12"
         class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
         placeholder="例：
 種類別名称：チョコレート
-原材料名：ビスケット（小麦・乳成分を含む、国内製造）、砂糖、全粉乳、カカオマス、植物油脂、ココアバター／乳化剤（大豆由来）、膨張剤、香料
-内容量：73.6g（個装紙込み）
+原材料名：ビスケット（小麦・乳成分を含む、国内製造）、砂糖、全粉乳、カカオマス、植物油脂、ハチミツ、ココアバター／乳化剤（大豆由来）、膨張剤、香料
+内容量：73.6g
 賞味期限：枠外左下に記載
 保存方法：直射日光を避け、28℃以下の涼しい場所で保存してください。
-販売者：株式会社○○
-製造所：株式会社○○"></textarea>
+販売者：株式会社○○　静岡県島田市○○
+製造所：富士食品工業株式会社　静岡県島田市牛尾1600-1
+栄養成分表示（1枚あたり）：熱量 52kcal、たんぱく質 0.6g、脂質 2.9g、炭水化物 6.1g、食塩相当量 0.07g"></textarea>
     </div>
 
     <!-- 実行ボタン -->
-    <div class="px-6 pb-6 flex items-center gap-4">
+    <div class="px-6 pb-6 pt-3 flex items-center gap-4">
       <button id="check-btn" onclick="runCheck()"
         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm">
         <span>🔍</span><span>チェック開始</span>
       </button>
-      <p class="text-xs text-gray-400">Google Gemini API を使用してOCR・解析します</p>
+      <p class="text-xs text-gray-400">Groq AI（Llama 3.3 70B）で解析します</p>
     </div>
   </div>
 
@@ -121,9 +96,9 @@
   <div id="loading" class="hidden bg-white rounded-xl border border-gray-200 p-8 text-center">
     <div class="flex items-center justify-center gap-3">
       <div class="spinner"></div>
-      <p class="text-gray-600 font-medium" id="loading-msg">画像を解析中...</p>
+      <p class="text-gray-600 font-medium" id="loading-msg">テキストを解析中...</p>
     </div>
-    <p class="text-xs text-gray-400 mt-2">食品表示基準と照合しています</p>
+    <p class="text-xs text-gray-400 mt-2">食品表示基準・はちみつ表示ルールと照合しています</p>
   </div>
 
   <!-- 結果エリア -->
@@ -145,18 +120,20 @@
     <!-- チェック詳細 -->
     <div id="check-items" class="space-y-3"></div>
 
-    <!-- フッター参考リンク -->
+    <!-- 参考リンク -->
     <div class="bg-white rounded-xl border border-gray-200 p-4">
       <p class="text-xs font-semibold text-gray-600 mb-2">📚 参考リソース（最新情報は各サイトをご確認ください）</p>
       <div class="flex flex-wrap gap-3 text-xs">
         <a href="https://www.caa.go.jp/policies/policy/food_labeling/food_labeling_act/" target="_blank"
-           class="text-blue-600 hover:underline">消費者庁｜食品表示法等（法令・通知）</a>
+           class="text-blue-600 hover:underline">消費者庁｜食品表示法等</a>
         <a href="https://www.caa.go.jp/policies/policy/food_labeling/food_labeling_act/pdf/food_labeling_act_220601_0007.pdf" target="_blank"
-           class="text-blue-600 hover:underline">食品表示基準Q&A（消費者庁PDF）</a>
+           class="text-blue-600 hover:underline">食品表示基準Q&A（PDF）</a>
         <a href="https://food-labeling.com/" target="_blank"
            class="text-blue-600 hover:underline">食品表示サポート.COM</a>
-        <a href="https://www.caa.go.jp/policies/policy/food_labeling/foods_with_nutrient_function_claims/pdf/150903_1.pdf" target="_blank"
-           class="text-blue-600 hover:underline">栄養成分表示ガイド</a>
+        <a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000121431.html" target="_blank"
+           class="text-blue-600 hover:underline">厚労省｜はちみつによる乳児ボツリヌス症</a>
+        <a href="https://www.caa.go.jp/notice/entry/016893/" target="_blank"
+           class="text-blue-600 hover:underline">消費者庁｜はちみつ食品表示</a>
       </div>
     </div>
 
@@ -168,97 +145,35 @@
 
 <script>
 // ─────────────────────────────────────────
-// 状態管理
+// APIキー 自動保存
 // ─────────────────────────────────────────
-let currentTab = 'image';
-let selectedImageBase64 = null;
-let selectedImageType = null;
+(function() {
+  const input = document.getElementById('api-key');
+  const saved = localStorage.getItem('groq_api_key');
+  if (saved) input.value = saved;
+  input.addEventListener('input', () => localStorage.setItem('groq_api_key', input.value));
+})();
 
-// ─────────────────────────────────────────
-// タブ切り替え
-// ─────────────────────────────────────────
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('panel-image').classList.toggle('hidden', tab !== 'image');
-  document.getElementById('panel-text').classList.toggle('hidden', tab !== 'text');
-  document.getElementById('tab-image').classList.toggle('tab-active', tab === 'image');
-  document.getElementById('tab-image').classList.toggle('text-gray-500', tab !== 'image');
-  document.getElementById('tab-text').classList.toggle('tab-active', tab === 'text');
-  document.getElementById('tab-text').classList.toggle('text-gray-500', tab !== 'text');
-}
-
-// ─────────────────────────────────────────
-// 画像アップロード
-// ─────────────────────────────────────────
-function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drop-active'); }
-function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drop-active'); }
-function onDrop(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('drop-active');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) loadImage(file);
-}
-function onFileSelect(e) { const file = e.target.files[0]; if (file) loadImage(file); }
-function loadImage(file) {
-  if (file.size > 4 * 1024 * 1024) { alert('ファイルサイズは4MB以下にしてください。\n（Gemini APIのbase64変換上限のため）'); return; }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const result = e.target.result;
-    const b64 = result.split(',')[1];
-    selectedImageBase64 = b64;
-    selectedImageType = file.type;
-    document.getElementById('drop-default').classList.add('hidden');
-    document.getElementById('drop-preview').classList.remove('hidden');
-    document.getElementById('preview-img').src = result;
-    document.getElementById('preview-name').textContent = file.name;
-  };
-  reader.readAsDataURL(file);
-}
-function clearImage(e) {
-  e.stopPropagation();
-  selectedImageBase64 = null;
-  selectedImageType = null;
-  document.getElementById('drop-default').classList.remove('hidden');
-  document.getElementById('drop-preview').classList.add('hidden');
-  document.getElementById('file-input').value = '';
-}
 function toggleKeyVisibility() {
   const input = document.getElementById('api-key');
   input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-// APIキーの自動保存・読み込み
-(function() {
-  const input = document.getElementById('api-key');
-  const saved = localStorage.getItem('gemini_api_key');
-  if (saved) input.value = saved;
-  input.addEventListener('input', () => {
-    localStorage.setItem('gemini_api_key', input.value);
-  });
-})();
-
 // ─────────────────────────────────────────
-// メインチェック処理
+// メインチェック
 // ─────────────────────────────────────────
 async function runCheck() {
   const apiKey = document.getElementById('api-key').value.trim();
-  if (!apiKey) { alert('Gemini APIキーを入力してください。'); return; }
-
-  if (currentTab === 'image' && !selectedImageBase64) {
-    alert('画像をアップロードしてください。'); return;
-  }
-  if (currentTab === 'text' && !document.getElementById('text-input').value.trim()) {
-    alert('テキストを入力してください。'); return;
-  }
+  if (!apiKey) { alert('Groq APIキーを入力してください。\nhttps://console.groq.com/keys で無料取得できます。'); return; }
+  const text = document.getElementById('text-input').value.trim();
+  if (!text) { alert('チェックするラベルのテキストを入力してください。'); return; }
 
   document.getElementById('results').classList.add('hidden');
   document.getElementById('loading').classList.remove('hidden');
-  document.getElementById('loading-msg').textContent =
-    currentTab === 'image' ? '画像を解析中...' : 'テキストを解析中...';
   document.getElementById('check-btn').disabled = true;
 
   try {
-    const result = await callGeminiAPI(apiKey);
+    const result = await callGroqAPI(apiKey, text);
     renderResults(result);
   } catch (err) {
     alert('エラーが発生しました：' + err.message);
@@ -269,110 +184,110 @@ async function runCheck() {
 }
 
 // ─────────────────────────────────────────
-// Gemini API 呼び出し
+// Groq API 呼び出し
 // ─────────────────────────────────────────
-async function callGeminiAPI(apiKey) {
+async function callGroqAPI(apiKey, labelText) {
   const systemPrompt = `あなたは日本の食品表示法・食品表示基準の専門家です。
-加工食品のラベル表示内容を以下のルールに基づいて厳密にチェックしてください。
+加工食品のラベル表示内容を、最新の食品表示基準（2024年改正対応）に基づいて厳密にチェックしてください。
 
 【食品表示基準（2024年）加工食品の必須表示事項】
-1. 名称（種類別名称）- 必須義務
-2. 原材料名 - 必須義務（添加物は原材料と区分表示、アレルゲンは括弧内に記載）
-3. 添加物 - 必須義務（原材料名と区切って記載）
-4. 内容量 - 必須義務（重量g/ml、個数、容量など）
-5. 消費期限または賞味期限 - 必須義務（どちらか一方、製造日からの期限）
-6. 保存方法 - 必須義務
-7. 製造者または販売者（名称・住所）- 必須義務
-8. 栄養成分表示 - 必須義務（熱量/たんぱく質/脂質/炭水化物/食塩相当量の5項目）
+1. 名称（種類別名称）- 必須義務｜根拠：食品表示基準第3条
+2. 原材料名 - 必須義務｜添加物は「／」で区分、アレルゲンは括弧内表記｜根拠：食品表示基準第3条
+3. 添加物 - 必須義務｜原材料名と区切って記載｜根拠：食品表示基準第3条
+4. 内容量 - 必須義務｜重量(g/ml)または個数・容量｜根拠：食品表示基準第3条
+5. 消費期限または賞味期限 - 必須義務（どちらか一方）｜根拠：食品表示基準第3条
+6. 保存方法 - 必須義務｜根拠：食品表示基準第3条
+7. 製造者または販売者（名称＋住所）- 必須義務｜根拠：食品表示基準第3条
+8. 栄養成分表示（5項目必須）- 必須義務
+   表示順：熱量→たんぱく質→脂質→炭水化物→食塩相当量
+   ナトリウム→食塩相当量換算：ナトリウム(mg)×2.54÷1000｜根拠：食品表示基準第3条
 9. アレルゲン表示（8品目必須）- 必須義務
-   必須8品目：えび、かに、卵、乳、小麦、そば、落花生（ピーナッツ）、くるみ
-10. 原料原産地名 - 必須義務（重量割合上位1位の原材料が国内製造または輸入品の場合）
+   必須8品目：えび・かに・卵・乳・小麦・そば・落花生（ピーナッツ）・くるみ｜根拠：食品表示基準別表第14
+10. 原料原産地名 - 必須義務（重量割合1位の原材料が国内製造または輸入品の場合）｜根拠：食品表示基準第3条
 
 【努力義務・推奨表示】
 - 特定原材料に準ずる20品目のアレルゲン表示（推奨）
-  20品目：アーモンド、あわび、いか、いくら、オレンジ、カシューナッツ、キウイフルーツ、牛肉、ごま、さけ、さば、ゼラチン、大豆、鶏肉、バナナ、豚肉、まつたけ、もも、やまいも、りんご
-- コンタミネーション（交差汚染）注意喚起表示（推奨）
-- 製造所固有記号の登録（製造委託の場合）
+  20品目：アーモンド・あわび・いか・いくら・オレンジ・カシューナッツ・キウイフルーツ・牛肉・ごま・さけ・さば・ゼラチン・大豆・鶏肉・バナナ・豚肉・まつたけ・もも・やまいも・りんご
+- コンタミネーション注意喚起表示（推奨）
+
+【はちみつ特有のチェック項目】※はちみつまたははちみつを含む食品の場合に必ずチェック
+- 乳児ボツリヌス症警告表示
+  ・はちみつそのものを販売する場合：「1歳未満の乳児には与えないでください」の表示が強く求められる（厚生労働省・消費者庁推奨、事実上の業界標準）
+  ・はちみつを原材料として使用した加工食品：乳児が摂取する可能性がある商品（離乳食・乳幼児向け食品等）では特に必要。一般加工食品でも注意喚起が推奨される。
+  ・根拠：厚生労働省「乳児ボツリヌス症の予防について」、消費者庁通知
+- はちみつの種類別名称・品質表示
+  ・「純粋はちみつ」「天然はちみつ」「加糖はちみつ」等の表記ルール（はちみつ類の表示に関する公正競争規約）
+  ・単花蜜（〇〇はちみつ）を名乗る場合は当該蜜源花粉が80%以上必要
+  ・加熱処理の有無の表示（非加熱・生はちみつ等の表記がある場合）
+- 原料原産地：はちみつの産地（国産・外国産・複数原産地）の表示義務
+- 有機はちみつの場合：有機JAS認定の表示義務（認定を受けていない場合「有機」「オーガニック」表記不可）
+- 糖度・水分含有量（任意表示だが記載する場合のルール）
 
 【アレルゲン表示ルール】
-- 一括表示法：「（小麦・乳成分を含む）」のように括弧内に記載 → 有効
+- 一括表示法：括弧内に「（小麦・乳成分を含む）」のように記載 → 有効
 - 個別表示法：各原材料名の後に記載 → 有効
-- 原材料名と添加物を「／」または改行で区分する
+- はちみつはアレルゲン義務品目ではないが、一部でアレルギー反応の報告あり（任意表示）
 
-【栄養成分表示ルール】
-- 表示順：熱量→たんぱく質→脂質→炭水化物→食塩相当量
-- ナトリウム表記は食塩相当量に換算（ナトリウム量(mg)×2.54÷1000）
-- 100gまたは1食分あたりで表示
+【栄養成分表示の免除条件】
+- 小規模事業者（前年度の食品の販売金額が1億円未満かつ従業員20人以下）は当面免除（努力義務）
 
-必ず以下のJSON形式のみで返答してください。説明文や前置きは一切不要です：
+以下のJSON形式のみで返答してください。前置き・説明は一切不要です：
 {
-  "product_name": "商品名または検出された名称",
-  "product_type": "加工食品の種類",
+  "product_name": "商品名または種類別名称",
+  "product_type": "食品の種類",
+  "has_honey": true,
   "items": [
     {
-      "id": "英数字のID",
+      "id": "英数字ID",
       "label": "チェック項目名",
       "obligation_level": "必須義務",
       "status": "ok",
       "current": "現在の記載内容（なければ空文字）",
       "issue": "問題の説明（okの場合は空文字）",
       "suggestion": "具体的な改善案（okの場合は空文字）",
-      "legal_basis": "食品表示基準 第X条 または 別表第X",
+      "legal_basis": "食品表示基準 第X条 等",
       "reference_url": "https://www.caa.go.jp/policies/policy/food_labeling/"
     }
   ],
-  "additional_notes": "その他気づいた点（任意）",
-  "summary": {
-    "ok": 0,
-    "warning": 0,
-    "error": 0,
-    "not_found": 0,
-    "score": 0
-  }
+  "honey_notes": "はちみつに関する特記事項（はちみつ不使用の場合は空文字）",
+  "additional_notes": "その他の指摘事項",
+  "summary": { "ok": 0, "warning": 0, "error": 0, "not_found": 0, "score": 0 }
 }
 
 statusの値：
 - "ok" → 適切に表示されている
 - "warning" → 記載はあるが不備・不明確な点がある
-- "error" → 義務表示が欠落している、または明らかに誤っている
-- "not_found" → 判断できない（画像が不鮮明など）
+- "error" → 義務表示が欠落または明らかに誤っている
+- "not_found" → 情報が不足していて判断できない
 
 obligation_levelの値：
-- "必須義務" → 法律で義務付け
-- "努力義務" → 推奨・任意
-- "任意表示ルール" → 任意だが記載する場合のルール違反
+- "必須義務" / "努力義務" / "任意表示ルール"
 
-全チェック項目を必ず網羅してください（10項目以上）。`;
+全チェック項目を網羅してください（最低10項目）。はちみつが使われている場合はかならずはちみつ専用チェック項目を追加してください。`;
 
-  const parts = [];
-
-  if (currentTab === 'image') {
-    parts.push({ inline_data: { mime_type: selectedImageType, data: selectedImageBase64 } });
-    parts.push({ text: '上記の食品ラベル画像を読み取り、記載内容をすべて認識した上で、食品表示基準に基づいてチェックしてください。JSON形式のみで返答してください。' });
-  } else {
-    const text = document.getElementById('text-input').value.trim();
-    parts.push({ text: `以下の食品ラベル記載内容を食品表示基準に基づいてチェックしてください。JSON形式のみで返答してください。\n\n${text}` });
-  }
-
-  // 30秒タイムアウト
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   let response;
   try {
-    response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }
-        })
-      }
-    );
+    response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `以下の食品ラベル記載内容を食品表示基準に基づいてチェックしてください。はちみつまたははちみつを含む原材料が使われている場合は、はちみつ特有のチェックも必ず行ってください。JSON形式のみで返答してください。\n\n【ラベル記載内容】\n${labelText}` }
+        ],
+        temperature: 0.1,
+        max_tokens: 4096,
+        response_format: { type: 'json_object' }
+      })
+    });
   } catch (e) {
     if (e.name === 'AbortError') throw new Error('タイムアウト：30秒以内に応答がありませんでした。ネットワークを確認して再試行してください。');
     throw e;
@@ -386,7 +301,7 @@ obligation_levelの値：
   }
 
   const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  const rawText = data.choices?.[0]?.message?.content?.trim();
   if (!rawText) throw new Error('APIからレスポンスを取得できませんでした。');
 
   const start = rawText.indexOf('{');
@@ -407,14 +322,10 @@ function renderResults(data) {
   const total = ok + warning + error + notFound;
   const score = summary.score || Math.round((ok / Math.max(total, 1)) * 100);
 
-  // スコアバッジ
   const scoreBadge = document.getElementById('score-badge');
   scoreBadge.textContent = score;
-  scoreBadge.className = `text-2xl font-bold ${
-    score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'
-  }`;
+  scoreBadge.className = `text-2xl font-bold ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'}`;
 
-  // サマリー統計
   document.getElementById('summary-stats').innerHTML = `
     <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
       <div class="text-2xl font-bold text-green-700">${ok}</div>
@@ -431,29 +342,32 @@ function renderResults(data) {
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
       <div class="text-2xl font-bold text-gray-500">${notFound}</div>
       <div class="text-xs text-gray-500 mt-1">🔍 判定不能</div>
-    </div>
-  `;
+    </div>`;
 
-  // 商品情報
   document.getElementById('product-info').innerHTML =
     `<span class="font-medium">検出された商品：</span>${esc(data.product_name || '不明')}
-     <span class="font-medium ml-4">種別：</span>${esc(data.product_type || '加工食品')}`;
+     <span class="font-medium ml-4">種別：</span>${esc(data.product_type || '加工食品')}
+     ${data.has_honey ? '<span class="ml-4 bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-semibold">🍯 はちみつ使用製品</span>' : ''}`;
 
-  // チェック項目（エラー→警告→OKの順）
   const items = [...(data.items || [])].sort((a, b) => {
     const order = { error: 0, warning: 1, not_found: 2, ok: 3 };
     return (order[a.status] ?? 4) - (order[b.status] ?? 4);
   });
 
-  document.getElementById('check-items').innerHTML = items.map(item => renderItem(item)).join('');
+  let html = items.map(item => renderItem(item)).join('');
 
+  if (data.honey_notes) {
+    html += `<div class="bg-amber-50 border border-amber-300 rounded-xl p-4 text-sm text-amber-900">
+      <span class="font-semibold">🍯 はちみつ表示に関する補足：</span><br>${esc(data.honey_notes)}
+    </div>`;
+  }
   if (data.additional_notes) {
-    document.getElementById('check-items').innerHTML += `
-      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        <span class="font-semibold">💡 その他の指摘：</span> ${esc(data.additional_notes)}
-      </div>`;
+    html += `<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+      <span class="font-semibold">💡 その他の指摘：</span> ${esc(data.additional_notes)}
+    </div>`;
   }
 
+  document.getElementById('check-items').innerHTML = html;
   document.getElementById('results').classList.remove('hidden');
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -473,6 +387,8 @@ function renderItem(item) {
     ? '<span class="text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 rounded px-2 py-0.5">努力義務</span>'
     : '<span class="text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200 rounded px-2 py-0.5">任意表示ルール</span>';
 
+  const isHoney = item.id?.includes('honey') || item.label?.includes('はちみつ') || item.label?.includes('ハチミツ');
+  const honeyBadge = isHoney ? '<span class="text-xs bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-0.5">🍯 はちみつ</span>' : '';
   const hasDetail = item.issue || item.suggestion || item.current;
 
   return `
@@ -483,41 +399,27 @@ function renderItem(item) {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="font-semibold text-gray-900 text-sm">${esc(item.label)}</span>
-            ${obligationBadge}
+            ${obligationBadge}${honeyBadge}
             <span class="text-xs px-2 py-0.5 rounded ${cfg.badge}">${cfg.label}</span>
           </div>
           ${item.current && item.status === 'ok'
-            ? `<p class="text-xs text-gray-500 mt-0.5 truncate">${esc(item.current)}</p>`
-            : ''}
+            ? `<p class="text-xs text-gray-500 mt-0.5 truncate">${esc(item.current)}</p>` : ''}
         </div>
         ${hasDetail ? '<span class="text-gray-400 text-xs ml-auto shrink-0">詳細 ▾</span>' : ''}
       </summary>
-
       ${hasDetail ? `
       <div class="px-5 pb-4 border-t border-current border-opacity-20 pt-3 space-y-2">
-        ${item.current ? `
-          <div>
-            <span class="text-xs font-semibold text-gray-600">📋 現在の記載：</span>
-            <p class="text-sm text-gray-700 mt-1 bg-white/70 rounded px-3 py-2">${esc(item.current)}</p>
-          </div>` : ''}
-        ${item.issue ? `
-          <div>
-            <span class="text-xs font-semibold text-gray-600">⚠️ 問題点：</span>
-            <p class="text-sm text-gray-800 mt-1">${esc(item.issue)}</p>
-          </div>` : ''}
-        ${item.suggestion ? `
-          <div>
-            <span class="text-xs font-semibold text-gray-600">💡 改善案：</span>
-            <p class="text-sm text-gray-800 mt-1 bg-white/70 rounded px-3 py-2 border-l-4 border-blue-400">${esc(item.suggestion)}</p>
-          </div>` : ''}
-        ${item.legal_basis ? `
-          <div class="flex items-center gap-2 pt-1">
-            <span class="text-xs text-gray-400">📖 根拠：${esc(item.legal_basis)}</span>
-            ${item.reference_url
-              ? `<a href="${esc(item.reference_url)}" target="_blank"
-                   class="text-xs text-blue-600 hover:underline">消費者庁サイトを見る →</a>`
-              : ''}
-          </div>` : ''}
+        ${item.current ? `<div><span class="text-xs font-semibold text-gray-600">📋 現在の記載：</span>
+          <p class="text-sm text-gray-700 mt-1 bg-white/70 rounded px-3 py-2">${esc(item.current)}</p></div>` : ''}
+        ${item.issue ? `<div><span class="text-xs font-semibold text-gray-600">⚠️ 問題点：</span>
+          <p class="text-sm text-gray-800 mt-1">${esc(item.issue)}</p></div>` : ''}
+        ${item.suggestion ? `<div><span class="text-xs font-semibold text-gray-600">💡 改善案：</span>
+          <p class="text-sm text-gray-800 mt-1 bg-white/70 rounded px-3 py-2 border-l-4 border-blue-400">${esc(item.suggestion)}</p></div>` : ''}
+        ${item.legal_basis ? `<div class="flex items-center gap-2 pt-1">
+          <span class="text-xs text-gray-400">📖 根拠：${esc(item.legal_basis)}</span>
+          ${item.reference_url
+            ? `<a href="${esc(item.reference_url)}" target="_blank" class="text-xs text-blue-600 hover:underline">詳細を見る →</a>` : ''}
+        </div>` : ''}
       </div>` : ''}
     </details>
   </div>`;
@@ -532,13 +434,9 @@ function esc(str) {
 
 function clearResults() {
   document.getElementById('results').classList.add('hidden');
-  // 画像・テキストもリセット
-  clearImage({ stopPropagation: () => {} });
   document.getElementById('text-input').value = '';
-  document.getElementById('file-input').value = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
 </body>
 </html>
-`;
