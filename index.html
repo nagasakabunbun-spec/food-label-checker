@@ -251,15 +251,45 @@ window.addEventListener('DOMContentLoaded', loadRules);
 function buildRulesContext() {
   if (!rulesData) return '';
   const parts = [];
-  for (const src of Object.values(rulesData.sources || {})) {
-    if (src.content) parts.push(`【${src.name}】\n${src.content}`);
+  // AI合成知識サマリーを最優先で使用
+  const ks = rulesData.knowledge_summary;
+  if (ks && !ks.error) {
+    const d = rulesData.knowledge_updated_at || rulesData.last_checked || '不明';
+    const sc = rulesData.site_count || 0;
+    parts.push('【AI合成知識サマリー（' + d + '更新・' + sc + 'サイト統合）】');
+    if (ks.mandatory_labels && ks.mandatory_labels.summary)
+      parts.push('▼必須表示の要点:\n' + ks.mandatory_labels.summary);
+    if (ks.allergen_rules && ks.allergen_rules.display_rules)
+      parts.push('▼アレルゲン表示最新ルール:\n' + ks.allergen_rules.display_rules + '\n最近の変更:' + (ks.allergen_rules.recent_changes||'なし'));
+    if (ks.additive_rules && ks.additive_rules.summary)
+      parts.push('▼添加物表示の要点:\n' + ks.additive_rules.summary);
+    if (ks.nutrition_rules && ks.nutrition_rules.summary)
+      parts.push('▼栄養成分表示の要点:\n' + ks.nutrition_rules.summary);
+    if (ks.origin_rules && ks.origin_rules.summary)
+      parts.push('▼原料原産地表示の要点:\n' + ks.origin_rules.summary + '\n重要:' + (ks.origin_rules.key_rule||''));
+    if (ks.honey_rules) {
+      const h = ks.honey_rules;
+      parts.push('▼はちみつ表示の最新要件:\n乳児警告:' + (h.infant_warning||'') + '\n品質表示:' + (h.quality_display||'') + '\n有機:' + (h.organic_rules||'') + '\n産地:' + (h.origin_rules||''));
+    }
+    if (ks.expiry_rules) {
+      const e = ks.expiry_rules;
+      parts.push('▼期限表示の要点:\n消費期限:' + (e.consumption_date||'') + '\n賞味期限:' + (e.best_before||''));
+    }
+    if (ks.common_mistakes && ks.common_mistakes.length)
+      parts.push('▼よくある誤り・落とし穴:\n' + ks.common_mistakes.map(function(m,i){return (i+1)+'.'+m;}).join('\n'));
   }
-  for (const src of Object.values(rulesData.honey_sources || {})) {
-    if (src.content) parts.push(`【${src.name}（はちみつ関連）】\n${src.content}`);
+  // 主要サイトの生データを補足
+  const topSources = ['caa_allergy','caa_nutrition','foodlabeling_additive','foodlabeling_origin','mhlw_honey_botulism'];
+  const allSources = Object.assign({}, rulesData.sources||{}, rulesData.honey_sources||{});
+  for (const key of topSources) {
+    const src = allSources[key];
+    if (src && src.content && !src.content.startsWith('[')) {
+      parts.push('【' + src.name + '（' + src.last_fetched + '取得）】\n' + src.content.substring(0,800));
+    }
   }
-  return parts.length ? '\n\n【消費者庁サイトより取得した最新ガイドライン情報】\n' + parts.join('\n\n') : '';
+  if (!parts.length) return '';
+  return '\n\n【最新ガイドライン情報（' + (rulesData.site_count||0) + 'サイト自動収集・AI合成）】\n' + parts.join('\n\n');
 }
-
 // ─────────────────────────────────────────
 // APIキー 自動保存・折りたたみ制御
 // ─────────────────────────────────────────
