@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使い方マニュアル｜食品ラベル表示チェッカー</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+  body { font-family: 'Noto Sans JP', sans-serif; }
+  .step-number { width: 2rem; height: 2rem; min-width: 2rem; }
+  h2 { scroll-margin-top: 80px; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ヘッダー -->
+<header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+    <a href="index.html" class="text-blue-600 hover:underline text-sm">← アプリに戻る</a>
+    <span class="text-gray-300">|</span>
+    <h1 class="text-base font-bold text-gray-900">食品ラベル表示チェッカー｜使い方マニュアル</h1>
+  </div>
+</header>
+
+<!-- 目次 -->
+<div class="max-w-4xl mx-auto px-4 py-6">
+  <nav class="bg-white rounded-xl border border-gray-200 p-5 mb-8">
+    <p class="text-sm font-bold text-gray-700 mb-3">📋 目次</p>
+    <ol class="space-y-1 text-sm text-blue-600">
+      <li><a href="#overview" class="hover:underline">1. このアプリでできること</a></li>
+      <li><a href="#prepare" class="hover:underline">2. 事前準備（APIキーの取得）</a></li>
+      <li><a href="#howto" class="hover:underline">3. 基本的な使い方</a></li>
+      <li><a href="#results" class="hover:underline">4. チェック結果の見方</a></li>
+      <li><a href="#qa" class="hover:underline">5. Q&A機能の使い方</a></li>
+      <li><a href="#preview" class="hover:underline">6. ラベルプレビューの使い方</a></li>
+      <li><a href="#honey" class="hover:underline">7. はちみつ製品のチェックについて</a></li>
+      <li><a href="#notes" class="hover:underline">8. 注意事項</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. 概要 -->
+  <section id="overview" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">1</span>
+      このアプリでできること
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <p class="text-sm text-gray-700">食品ラベル（裏面表示）のテキストをAIが食品表示基準に照らし合わせて自動チェックするツールです。</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p class="text-sm font-bold text-green-800 mb-2">✅ できること</p>
+          <ul class="text-xs text-green-700 space-y-1">
+            <li>・必須表示項目の過不足チェック</li>
+            <li>・アレルゲン表示の確認（8品目必須）</li>
+            <li>・栄養成分表示の項目・順序確認</li>
+            <li>・はちみつ特有の表示要件チェック</li>
+            <li>・修正前・後の文例を含む改善案提示</li>
+            <li>・結果に関する追加質問への回答</li>
+            <li>・修正済みラベルのプレビュー生成・PNG保存</li>
+          </ul>
+        </div>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p class="text-sm font-bold text-red-800 mb-2">⚠️ できないこと・注意点</p>
+          <ul class="text-xs text-red-700 space-y-1">
+            <li>・画像の直接読み取り（テキスト入力のみ）</li>
+            <li>・法的判断の保証（参考情報としてご利用ください）</li>
+            <li>・製造配合量の特定（不明な場合は「要確認」表示）</li>
+            <li>・消費者庁への申請・届出の代行</li>
+          </ul>
+        </div>
+      </div>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+        <strong>ガイドライン自動更新：</strong>毎週月曜日に消費者庁・厚労省のサイトを自動巡回し、最新ガイドラインに基づいてチェックします。
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 準備 -->
+  <section id="prepare" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">2</span>
+      事前準備（APIキーの取得）
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-700 mb-4">このアプリはAI（Groq）を使って解析します。無料でAPIキーを取得してください。</p>
+      <ol class="space-y-4">
+        <li class="flex gap-4">
+          <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800"><a href="https://console.groq.com/keys" target="_blank" class="text-blue-600 hover:underline">console.groq.com/keys</a> を開く</p>
+            <p class="text-xs text-gray-500 mt-1">Googleアカウントでサインインできます（無料・クレジットカード不要）</p>
+          </div>
+        </li>
+        <li class="flex gap-4">
+          <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">「Create API Key」をクリックしてキーを発行</p>
+            <p class="text-xs text-gray-500 mt-1"><code class="bg-gray-100 px-1 rounded">gsk_</code> から始まる文字列がAPIキーです</p>
+          </div>
+        </li>
+        <li class="flex gap-4">
+          <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">アプリの「🔑 API設定」欄に貼り付ける</p>
+            <p class="text-xs text-gray-500 mt-1">一度入力するとブラウザに保存され、次回から自動入力されます</p>
+          </div>
+        </li>
+      </ol>
+      <div class="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600">
+        <strong>無料枠：</strong>1日1,000回まで利用可能。通常の業務利用では十分な量です。<br>
+        <strong>APIキーの安全性：</strong>キーはブラウザ内のみで使用され、外部サーバーには送信されません。
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 使い方 -->
+  <section id="howto" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">3</span>
+      基本的な使い方
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+
+      <div class="flex gap-4">
+        <div class="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">1</div>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-gray-800">ラベルのテキストを入力欄に貼り付ける</p>
+          <p class="text-xs text-gray-500 mt-1 mb-2">商品パッケージの裏面に記載されている文章を、そのままコピー＆ペーストしてください。</p>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 font-mono leading-relaxed">
+            種類別名称：チョコレート<br>
+            原材料名：ビスケット（小麦・乳成分を含む、国内製造）、砂糖、全粉乳…<br>
+            内容量：73.6g<br>
+            賞味期限：枠外左下に記載<br>
+            保存方法：直射日光を避け、28℃以下の涼しい場所で保存…<br>
+            販売者：株式会社長坂養蜂場　〒431-1424 静岡県浜松市…
+          </div>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4 flex gap-4">
+        <div class="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">2</div>
+        <div>
+          <p class="text-sm font-bold text-gray-800">「🔍 チェック開始」ボタンをクリック</p>
+          <p class="text-xs text-gray-500 mt-1">AIが解析を開始します。通常10〜20秒で結果が表示されます。</p>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4 flex gap-4">
+        <div class="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">3</div>
+        <div>
+          <p class="text-sm font-bold text-gray-800">チェック結果を確認する</p>
+          <p class="text-xs text-gray-500 mt-1">各項目の詳細をクリックすると、問題点と具体的な改善案が表示されます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 結果の見方 -->
+  <section id="results" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">4</span>
+      チェック結果の見方
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+          <p class="text-sm font-bold text-red-700 mb-1">❌ 違反・欠落</p>
+          <p class="text-xs text-red-600">法令で義務付けられた表示が欠けているか、明らかに誤っている状態。<br>優先的に対応が必要です。</p>
+        </div>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p class="text-sm font-bold text-yellow-700 mb-1">⚠️ 要確認</p>
+          <p class="text-xs text-yellow-600">記載はあるが不備・不明確な点がある状態。または製造配合が不明なため断定できない場合。<br>内容を確認して対応を判断してください。</p>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p class="text-sm font-bold text-green-700 mb-1">✅ 適切</p>
+          <p class="text-xs text-green-600">法令の要件を満たしている状態。</p>
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p class="text-sm font-bold text-gray-600 mb-1">🔍 判定不能</p>
+          <p class="text-xs text-gray-500">テキストだけでは判断できない場合。<br>実際の製品・配合を確認してください。</p>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4">
+        <p class="text-sm font-bold text-gray-800 mb-2">義務レベルのバッジ</p>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="bg-red-100 text-red-700 border border-red-200 rounded px-2 py-1 font-bold">必須義務</span>
+          <span class="text-xs text-gray-600 self-center">→ 法律で義務付け。違反は行政指導の対象</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs mt-2">
+          <span class="bg-blue-100 text-blue-700 border border-blue-200 rounded px-2 py-1 font-bold">努力義務</span>
+          <span class="text-xs text-gray-600 self-center">→ 推奨されるが義務ではない</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs mt-2">
+          <span class="bg-gray-100 text-gray-600 border border-gray-200 rounded px-2 py-1 font-bold">任意表示ルール</span>
+          <span class="text-xs text-gray-600 self-center">→ 任意だが記載する場合にルール違反がある</span>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-100 pt-4">
+        <p class="text-sm font-bold text-gray-800 mb-2">改善案の見方</p>
+        <div class="bg-blue-50 border-l-4 border-blue-400 rounded px-4 py-3 text-xs space-y-2">
+          <div>
+            <span class="inline-block bg-red-100 text-red-700 text-xs font-bold px-1.5 py-0.5 rounded mr-1">修正前</span>
+            現在のラベルの記載内容
+          </div>
+          <div class="mt-2">
+            <span class="inline-block bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded mr-1">修正後</span>
+            実際にラベルに記載できる改善後の文例
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Q&A -->
+  <section id="qa" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">5</span>
+      💬 Q&A機能の使い方
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <p class="text-sm text-gray-700">チェック結果の画面下部にある青いQ&Aエリアで、結果に関する質問ができます。</p>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-xs font-bold text-blue-800 mb-2">💡 質問例</p>
+        <ul class="text-xs text-blue-700 space-y-1">
+          <li>「はちみつの乳児警告文の具体的な文例を教えてください」</li>
+          <li>「原材料名と添加物の区切り方を詳しく説明してください」</li>
+          <li>「栄養成分表示がない場合はどうなりますか？」</li>
+          <li>「この改善案をそのままラベルに使える文章にして」</li>
+          <li>「アレルゲンの一括表示法と個別表示法の違いは？」</li>
+        </ul>
+      </div>
+      <p class="text-xs text-gray-500">チェックした商品の情報を文脈として持った状態で回答します。Enter で送信、Shift+Enter で改行できます。</p>
+    </div>
+  </section>
+
+  <!-- 6. プレビュー -->
+  <section id="preview" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-blue-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">6</span>
+      📄 ラベルプレビューの使い方
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <p class="text-sm text-gray-700">チェック結果をもとに、修正済みラベルのイメージをAIが自動生成します。</p>
+      <ol class="space-y-3 text-sm">
+        <li class="flex gap-3">
+          <span class="bg-emerald-100 text-emerald-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+          <span>チェック結果の画面で「✨ ラベルを生成」ボタンをクリック</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="bg-emerald-100 text-emerald-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+          <span>AIが修正済みのラベルレイアウトを生成（10〜20秒）</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="bg-emerald-100 text-emerald-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+          <span>「⬇️ PNG保存」で画像としてダウンロード、または「🖨️ 印刷」</span>
+        </li>
+      </ol>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+        <strong>⚠️ 注意：</strong>オレンジ色で表示されている <strong>……（要記載）</strong> の箇所は、実際のラベルには正確な情報を必ず記入してください。AIが判断できなかった箇所のプレースホルダーです。
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. はちみつ -->
+  <section id="honey" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-amber-500 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">7</span>
+      🍯 はちみつ製品のチェックについて
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+      <p class="text-sm text-gray-700">はちみつまたははちみつを含む原材料が検出された場合、以下の項目が自動的に追加チェックされます。</p>
+      <div class="space-y-3">
+        <div class="flex gap-3 bg-amber-50 rounded-lg p-3">
+          <span class="text-amber-600 text-lg">⚠️</span>
+          <div>
+            <p class="text-sm font-bold text-amber-800">乳児ボツリヌス症の警告表示</p>
+            <p class="text-xs text-amber-700 mt-1">「1歳未満の乳児には与えないでください」の注意書きが推奨されます（厚生労働省・消費者庁推奨）。はちみつ入り加工食品にも記載が推奨されています。</p>
+          </div>
+        </div>
+        <div class="flex gap-3 bg-gray-50 rounded-lg p-3">
+          <span class="text-gray-600 text-lg">📋</span>
+          <div>
+            <p class="text-sm font-bold text-gray-800">その他のチェック項目</p>
+            <ul class="text-xs text-gray-600 mt-1 space-y-0.5">
+              <li>・はちみつの産地（国産・外国産）の原料原産地表示</li>
+              <li>・「純粋はちみつ」「加糖はちみつ」等の品質表示ルール</li>
+              <li>・単花蜜表示の場合は蜜源花粉が80%以上必要</li>
+              <li>・有機はちみつの場合は有機JAS認定が必要</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 注意事項 -->
+  <section id="notes" class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="bg-gray-600 text-white rounded-full step-number flex items-center justify-center text-sm font-bold">8</span>
+      注意事項
+    </h2>
+    <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-3 text-sm text-gray-700">
+      <div class="flex gap-2">
+        <span class="text-red-500 shrink-0">●</span>
+        <p>このアプリのチェック結果は<strong>参考情報</strong>です。最終的な法的判断は消費者庁のガイドラインや専門家にご確認ください。</p>
+      </div>
+      <div class="flex gap-2">
+        <span class="text-red-500 shrink-0">●</span>
+        <p>APIキーは個人の責任で管理してください。<strong>共有PCでは使用しないでください</strong>（キーはブラウザに保存されます）。</p>
+      </div>
+      <div class="flex gap-2">
+        <span class="text-orange-500 shrink-0">●</span>
+        <p>ガイドラインは毎週月曜日に自動更新されますが、<strong>法改正の反映には数日〜数週間かかる場合</strong>があります。</p>
+      </div>
+      <div class="flex gap-2">
+        <span class="text-orange-500 shrink-0">●</span>
+        <p>原材料の使用量・配合比率は製造配合書で確認してください。AIは実際の製造量を知ることができません。</p>
+      </div>
+      <div class="flex gap-2">
+        <span class="text-blue-500 shrink-0">●</span>
+        <p>Groq APIの無料枠は1日1,000回です。業務での大量利用の場合は有料プランをご検討ください。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- フッター -->
+  <footer class="border-t border-gray-200 pt-6 pb-10 text-center">
+    <p class="text-xs text-gray-400">食品ラベル表示チェッカー｜株式会社長坂養蜂場</p>
+    <p class="text-xs text-gray-400 mt-1">参考：<a href="https://www.caa.go.jp/policies/policy/food_labeling/" target="_blank" class="text-blue-500 hover:underline">消費者庁 食品表示法</a>　<a href="https://food-labeling.com/" target="_blank" class="text-blue-500 hover:underline">食品表示サポート.COM</a></p>
+    <a href="index.html" class="mt-4 inline-block text-sm text-blue-600 hover:underline">← アプリに戻る</a>
+  </footer>
+</div>
+
+</body>
+</html>
