@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>食品ラベル表示チェッカー</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
   body { font-family: 'Noto Sans JP', sans-serif; }
@@ -139,6 +140,42 @@
            class="text-blue-600 hover:underline">厚労省｜はちみつによる乳児ボツリヌス症</a>
         <a href="https://www.caa.go.jp/notice/entry/016893/" target="_blank"
            class="text-blue-600 hover:underline">消費者庁｜はちみつ食品表示</a>
+      </div>
+    </div>
+
+    <!-- ラベルプレビュー生成 -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-gray-900">📄 修正済みラベルのプレビュー生成</h3>
+          <p class="text-xs text-gray-400 mt-0.5">チェック結果をもとに、正しく修正されたラベルのイメージをAIが生成します</p>
+        </div>
+        <button id="label-gen-btn" onclick="generateLabelPreview()"
+          class="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm whitespace-nowrap">
+          <span>✨</span><span>ラベルを生成</span>
+        </button>
+      </div>
+      <div id="label-preview-area" class="hidden">
+        <div id="label-loading" class="hidden text-center py-6">
+          <div class="spinner mx-auto mb-2"></div>
+          <p class="text-sm text-gray-500">修正済みラベルを生成中...</p>
+        </div>
+        <!-- 生成されたラベル本体 -->
+        <div id="label-output" class="hidden">
+          <div id="label-card" class="border-2 border-gray-700 rounded-lg p-5 bg-white font-sans text-xs leading-relaxed max-w-xl mx-auto" style="font-family:'Noto Sans JP',sans-serif;">
+            <!-- JSで動的に中身を入れる -->
+          </div>
+          <div class="flex gap-3 justify-center mt-4">
+            <button onclick="downloadLabel()"
+              class="flex items-center gap-2 px-5 py-2 bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold rounded-lg">
+              <span>⬇️</span><span>PNG保存</span>
+            </button>
+            <button onclick="printLabel()"
+              class="flex items-center gap-2 px-5 py-2 bg-white border border-gray-400 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-lg">
+              <span>🖨️</span><span>印刷</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -623,6 +660,166 @@ function appendChat(role, content, id) {
   }
 
   document.getElementById('chat-history').appendChild(div);
+}
+
+// ─────────────────────────────────────────
+// ラベルプレビュー生成
+// ─────────────────────────────────────────
+async function generateLabelPreview() {
+  if (!lastCheckResult || !lastLabelText) {
+    alert('先にチェックを実行してください。'); return;
+  }
+  const apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { alert('APIキーを入力してください。'); return; }
+
+  document.getElementById('label-preview-area').classList.remove('hidden');
+  document.getElementById('label-loading').classList.remove('hidden');
+  document.getElementById('label-output').classList.add('hidden');
+  document.getElementById('label-gen-btn').disabled = true;
+
+  try {
+    const labelData = await callGroqLabelGen(apiKey);
+    renderLabelCard(labelData);
+    document.getElementById('label-output').classList.remove('hidden');
+  } catch(e) {
+    alert('ラベル生成エラー：' + e.message);
+  } finally {
+    document.getElementById('label-loading').classList.add('hidden');
+    document.getElementById('label-gen-btn').disabled = false;
+    document.getElementById('label-output').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+}
+
+async function callGroqLabelGen(apiKey) {
+  const issuesSummary = (lastCheckResult.items || [])
+    .filter(i => i.status === 'error' || i.status === 'warning')
+    .map(i => `・${i.label}：${i.issue} → ${i.suggestion}`)
+    .join('\n');
+
+  const prompt = `以下の食品ラベルのテキストと、チェックで検出された問題点・改善案をもとに、法的要件を満たす修正済みラベルのデータをJSONで出力してください。
+
+【元のラベルテキスト】
+${lastLabelText}
+
+【検出された問題点と改善案】
+${issuesSummary || '問題なし'}
+
+以下のJSON形式のみで返答してください：
+{
+  "product_name": "商品名",
+  "category": "種類別名称",
+  "ingredients": "原材料名（添加物は／で区切り）",
+  "content": "内容量",
+  "expiry_label": "賞味期限 or 消費期限",
+  "expiry_value": "期限の記載内容",
+  "storage": "保存方法",
+  "seller_label": "販売者 or 製造者",
+  "seller": "会社名・住所",
+  "manufacturer": "製造所（販売者と異なる場合のみ。同一の場合は空文字）",
+  "nutrition": {
+    "serving": "1食分(Xg)あたり or 100gあたり",
+    "energy": "Xkcal",
+    "protein": "Xg",
+    "fat": "Xg",
+    "carb": "Xg",
+    "salt": "Xg"
+  },
+  "allergens": "アレルギー物質の表記（例：小麦・卵・乳成分・大豆を含む）",
+  "contamination": "コンタミネーション注意書き（あれば）",
+  "honey_warning": "はちみつ警告文（はちみつ使用の場合）",
+  "notes": "その他注意書き",
+  "fix_summary": "修正した主な箇所の説明（2〜4行）"
+}`;
+
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), 30000);
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    signal: controller.signal,
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: 'あなたは日本の食品表示法の専門家です。指示されたJSON形式のみで返答してください。' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1, max_tokens: 2048,
+      response_format: { type: 'json_object' }
+    })
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || 'APIエラー'); }
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content?.trim() || '';
+  const s = raw.indexOf('{'), en = raw.lastIndexOf('}');
+  if (s < 0) throw new Error('JSONを取得できませんでした');
+  return JSON.parse(raw.slice(s, en + 1));
+}
+
+function renderLabelCard(d) {
+  const n = d.nutrition || {};
+  const rows = [
+    ['種類別名称', d.category],
+    ['原材料名', d.ingredients],
+    ['内容量', d.content],
+    [d.expiry_label || '賞味期限', d.expiry_value],
+    ['保存方法', d.storage],
+    [d.seller_label || '販売者', d.seller],
+    d.manufacturer ? ['製造所', d.manufacturer] : null,
+  ].filter(Boolean);
+
+  const nutRows = [
+    ['熱量', n.energy], ['たんぱく質', n.protein],
+    ['脂質', n.fat], ['炭水化物', n.carb], ['食塩相当量', n.salt]
+  ];
+
+  document.getElementById('label-card').innerHTML = `
+    <div style="border:2px solid #222;padding:12px;font-size:11px;line-height:1.7;color:#111;background:#fff;max-width:480px;margin:0 auto;">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+        ${rows.map(([k,v])=>`
+          <tr style="border-bottom:1px solid #ccc;">
+            <td style="padding:3px 6px;font-weight:bold;white-space:nowrap;vertical-align:top;width:100px;border-right:1px solid #ccc;">${k}</td>
+            <td style="padding:3px 6px;vertical-align:top;">${esc(v||'')}</td>
+          </tr>`).join('')}
+      </table>
+
+      <table style="width:100%;border-collapse:collapse;border:1px solid #555;margin-top:6px;font-size:10px;">
+        <tr><th colspan="2" style="background:#333;color:#fff;padding:3px 6px;text-align:left;">栄養成分表示（${esc(n.serving||'100gあたり')}）</th></tr>
+        ${nutRows.map(([k,v])=>`
+          <tr style="border-bottom:1px solid #ccc;">
+            <td style="padding:2px 6px;font-weight:bold;">${k}</td>
+            <td style="padding:2px 6px;text-align:right;">${esc(v||'-')}</td>
+          </tr>`).join('')}
+      </table>
+
+      ${d.allergens ? `<p style="margin-top:6px;font-size:10px;"><b>アレルギー物質：</b>${esc(d.allergens)}</p>` : ''}
+      ${d.contamination ? `<p style="font-size:10px;color:#555;">${esc(d.contamination)}</p>` : ''}
+      ${d.honey_warning ? `<p style="margin-top:4px;font-size:10px;color:#b45309;font-weight:bold;">⚠️ ${esc(d.honey_warning)}</p>` : ''}
+      ${d.notes ? `<p style="margin-top:4px;font-size:10px;color:#555;">${esc(d.notes)}</p>` : ''}
+    </div>
+    ${d.fix_summary ? `<div class="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-xs text-emerald-800">
+      <span class="font-bold">✅ 修正した主な箇所：</span><br>${esc(d.fix_summary)}</div>` : ''}
+  `;
+}
+
+async function downloadLabel() {
+  const card = document.getElementById('label-card');
+  try {
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    const a = document.createElement('a');
+    a.download = 'label-preview.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } catch(e) { alert('画像保存に失敗しました：' + e.message); }
+}
+
+function printLabel() {
+  const card = document.getElementById('label-card');
+  const win = window.open('', '_blank');
+  win.document.write(`<html><head><title>ラベルプレビュー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>body{font-family:'Noto Sans JP',sans-serif;margin:20px;}@media print{body{margin:0;}}</style>
+    </head><body>${card.outerHTML}<script>window.onload=()=>window.print();<\/script></body></html>`);
+  win.document.close();
 }
 
 async function callGroqChat(apiKey, question) {
