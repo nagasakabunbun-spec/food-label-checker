@@ -1,13 +1,11 @@
 {
-  "validated_at": "2026-06-04",
+  "validated_at": "2026-06-08",
   "is_valid": true,
-  "total_issues": 0,
   "critical_count": 0,
   "warning_count": 0,
-  "suggestion_count": 0,
   "critical_issues": [],
   "warnings": [],
-  "suggestions": [],
-  "overall_assessment": "初回検証前の初期状態です。毎週月曜日にGitHub Actionsが自動検証を実施します。",
-  "error": ""
+  "overall_assessment": "検証エラー: 'latin-1' codec can't encode character '\\uff1a' in position 12: ordinal not in range(256)",
+  "sites_checked": 23,
+  "knowledge_summary_available": true
 }
