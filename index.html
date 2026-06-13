@@ -278,13 +278,13 @@ function buildRulesContext() {
     if (ks.common_mistakes && ks.common_mistakes.length)
       parts.push('▼よくある誤り・落とし穴:\n' + ks.common_mistakes.map(function(m,i){return (i+1)+'.'+m;}).join('\n'));
   }
-  // 主要サイトの生データを補足
-  const topSources = ['caa_allergy','caa_nutrition','foodlabeling_additive','foodlabeling_origin','mhlw_honey_botulism'];
+  // 主要サイトの生データを補足（トークン節約のため2サイトのみ・400文字以内）
+  const topSources = ['caa_allergy','mhlw_honey_botulism'];
   const allSources = Object.assign({}, rulesData.sources||{}, rulesData.honey_sources||{});
   for (const key of topSources) {
     const src = allSources[key];
     if (src && src.content && !src.content.startsWith('[')) {
-      parts.push('【' + src.name + '（' + src.last_fetched + '取得）】\n' + src.content.substring(0,800));
+      parts.push('【' + src.name + '（' + src.last_fetched + '取得）】\n' + src.content.substring(0,400));
     }
   }
   if (!parts.length) return '';
